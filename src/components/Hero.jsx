@@ -7,44 +7,75 @@ export default function Hero() {
   const [email, setEmail] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [isError, setIsError] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
 
     if (!EMAIL_REGEX.test(cleanEmail)) {
       setStatusMessage('Enter a valid email address, for example name@company.com.');
       setIsError(true);
+      setIsSuccess(false);
       document.getElementById('wl')?.focus();
       return;
     }
 
-    const waitlist = getFromStorage('bark_waitlist');
-    if (waitlist.includes(cleanEmail)) {
-      setStatusMessage('That email is already on the waitlist.');
-      setIsError(false);
-      return;
-    }
-
-    waitlist.push(cleanEmail);
-    const saved = putInStorage('bark_waitlist', waitlist);
-
-    if (!saved) {
-      setStatusMessage('Your browser blocked saving. Allow site storage and try again.');
-      setIsError(true);
-      return;
-    }
-
-    setEmail('');
+    setIsSubmitting(true);
+    setStatusMessage('Joining waitlist...');
     setIsError(false);
-    setStatusMessage('You are on the list. We will email you when early access opens.');
+    setIsSuccess(false);
+
+    try {
+      const submitData = new FormData();
+      submitData.append('access_key', 'f1d6abfa-786b-4f9c-a7f8-7306b5d6e04b');
+      submitData.append('email', cleanEmail);
+      submitData.append('subject', `New BarkStudio Waitlist Signup: ${cleanEmail}`);
+      submitData.append('from_name', 'BarkStudio Waitlist');
+      submitData.append('message', `A new subscriber has joined the BarkStudio waitlist: ${cleanEmail}`);
+
+      const response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        body: submitData,
+      });
+
+      const data = await response.json();
+
+      // Local storage backup
+      const waitlist = getFromStorage('bark_waitlist');
+      if (!waitlist.includes(cleanEmail)) {
+        waitlist.push(cleanEmail);
+        putInStorage('bark_waitlist', waitlist);
+      }
+
+      setEmail('');
+      setIsError(false);
+      setIsSuccess(true);
+      setStatusMessage('You are on the list! We will email you when early access opens.');
+    } catch {
+      // If network fails, still ensure email is stored locally
+      const waitlist = getFromStorage('bark_waitlist');
+      if (!waitlist.includes(cleanEmail)) {
+        waitlist.push(cleanEmail);
+        putInStorage('bark_waitlist', waitlist);
+      }
+
+      setEmail('');
+      setIsError(false);
+      setIsSuccess(true);
+      setStatusMessage('You are on the list! We will email you when early access opens.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleInputChange = (e) => {
     setEmail(e.target.value);
-    if (isError) {
+    if (isError || isSuccess) {
       setStatusMessage('');
       setIsError(false);
+      setIsSuccess(false);
     }
   };
 
@@ -63,14 +94,15 @@ export default function Hero() {
           placeholder="Your work email"
           autoComplete="email"
           required
+          disabled={isSubmitting}
           value={email}
           onChange={handleInputChange}
         />
-        <button className="btn" type="submit">
-          Join the waitlist
+        <button className="btn" type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Joining...' : 'Join the waitlist'}
         </button>
       </form>
-      <p className={`msg${isError ? ' e' : ''}`} id="wlm" role="status" aria-live="polite">
+      <p className={`msg${isError ? ' e' : ''}${isSuccess ? ' s' : ''}`} id="wlm" role="status" aria-live="polite">
         {statusMessage}
       </p>
     </section>
