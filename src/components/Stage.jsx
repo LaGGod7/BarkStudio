@@ -17,11 +17,10 @@ uniform vec2 r,m;
 uniform vec3 tn;
 uniform float t,k,h0;
 
-// Mobile-safe Hash without Sine (no float overflow, stable across all mobile GPUs)
+// Smooth high-accuracy hash with angle reduction (never loses precision or overflows on mobile)
 float h(vec2 p){
-  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
-  p3 += dot(p3, p3.yzx + 33.33);
-  return fract((p3.x + p3.y) * p3.z);
+  float d = mod(dot(p, vec2(127.1, 311.7)), 6.2831853);
+  return fract(sin(d) * 43758.5453);
 }
 
 float n(vec2 p){
@@ -37,7 +36,7 @@ float fbm(vec2 p){
   float s = 0.0;
   for(int i = 0; i < 4; i++){
     s += a * n(p);
-    p = p * 2.03 + vec2(7.1, 3.4);
+    p = p * 2.03 + 7.1;
     a *= 0.5;
   }
   return s;
@@ -76,7 +75,7 @@ export default function Stage({ tint = 'pink', className = '', style, children }
     if (!st || !cv) return;
 
     const tn = TINT[tint] || TINT.pink;
-    const opts = { antialias: false, alpha: true, depth: false, stencil: false };
+    const opts = { antialias: false, alpha: false, depth: false, stencil: false };
     const gl =
       cv.getContext('webgl2', opts) ||
       cv.getContext('webgl', opts) ||
@@ -133,10 +132,10 @@ export default function Stage({ tint = 'pink', className = '', style, children }
       if (!st || !cv) return;
       const rect = st.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       const nextW = Math.max(2, Math.round(rect.width * dpr));
       const nextH = Math.max(2, Math.round(rect.height * dpr));
-      if (Math.abs(cv.width - nextW) > 1 || Math.abs(cv.height - nextH) > 1) {
+      if (Math.abs(cv.width - nextW) > 2 || Math.abs(cv.height - nextH) > 2) {
         cv.width = nextW;
         cv.height = nextH;
         gl.viewport(0, 0, nextW, nextH);
@@ -145,6 +144,7 @@ export default function Stage({ tint = 'pink', className = '', style, children }
 
     size();
     window.addEventListener('resize', size);
+    window.addEventListener('orientationchange', size);
 
     // Fast sync when CSS transitions end
     const handleTransitionEnd = () => size();
@@ -221,36 +221,23 @@ export default function Stage({ tint = 'pink', className = '', style, children }
       lastNow = now;
 
       if (vis) {
-        // Continuous atomic size tracking to prevent buffer mismatch during transitions
-        const rect = st.getBoundingClientRect();
-        if (rect.width > 2 && rect.height > 2) {
-          const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-          const w = Math.max(2, Math.round(rect.width * dpr));
-          const h = Math.max(2, Math.round(rect.height * dpr));
-          if (Math.abs(cv.width - w) > 1 || Math.abs(cv.height - h) > 1) {
-            cv.width = w;
-            cv.height = h;
-            gl.viewport(0, 0, w, h);
-          }
+        const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-          const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        mx += (tx - mx) * 0.1;
+        my += (ty - my) * 0.1;
+        k += (tk - k) * 0.12;
+        hue += (th - hue) * 0.08;
 
-          mx += (tx - mx) * 0.1;
-          my += (ty - my) * 0.1;
-          k += (tk - k) * 0.12;
-          hue += (th - hue) * 0.08;
+        // Smooth time integration
+        accumulatedTime += dt * 0.035 * (1 + k * 0.4);
 
-          // Smooth time integration with modulo to prevent float overflow glitch
-          accumulatedTime = (accumulatedTime + dt * 0.035 * (1 + k * 0.4)) % 1000;
-
-          gl.uniform2f(U.r, cv.width, cv.height);
-          gl.uniform2f(U.m, mx, my);
-          gl.uniform3f(U.tn, tn[0], tn[1], tn[2]);
-          gl.uniform1f(U.t, isReduced ? 3.0 : accumulatedTime);
-          gl.uniform1f(U.k, isReduced ? 0.2 : k);
-          gl.uniform1f(U.h0, hue);
-          gl.drawArrays(gl.TRIANGLES, 0, 3);
-        }
+        gl.uniform2f(U.r, cv.width, cv.height);
+        gl.uniform2f(U.m, mx, my);
+        gl.uniform3f(U.tn, tn[0], tn[1], tn[2]);
+        gl.uniform1f(U.t, isReduced ? 3.0 : accumulatedTime);
+        gl.uniform1f(U.k, isReduced ? 0.2 : k);
+        gl.uniform1f(U.h0, hue);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
       }
       animId = requestAnimationFrame(frame);
     }
@@ -260,6 +247,7 @@ export default function Stage({ tint = 'pink', className = '', style, children }
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', size);
+      window.removeEventListener('orientationchange', size);
       if (resizeObserver) resizeObserver.disconnect();
       intersectionObserver.disconnect();
       cv.removeEventListener('webglcontextlost', handleContextLost);

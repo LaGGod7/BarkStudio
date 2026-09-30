@@ -31,9 +31,11 @@ export default function Hero() {
       const submitData = new FormData();
       submitData.append('access_key', 'f1d6abfa-786b-4f9c-a7f8-7306b5d6e04b');
       submitData.append('email', cleanEmail);
+      submitData.append('reply_to', cleanEmail);
       submitData.append('subject', `New BarkStudio Waitlist Signup: ${cleanEmail}`);
       submitData.append('from_name', 'BarkStudio Waitlist');
-      submitData.append('message', `A new subscriber has joined the BarkStudio waitlist: ${cleanEmail}`);
+      submitData.append('Subscriber Email', cleanEmail);
+      submitData.append('message', `A new subscriber has joined the BarkStudio waitlist with email: ${cleanEmail}`);
 
       const response = await fetch('https://api.web3forms.com/submit', {
         method: 'POST',

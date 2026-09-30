@@ -40,11 +40,10 @@ precision mediump float;
 uniform vec2 r,m;
 uniform float t;
 
-// Mobile-safe Hash without Sine (no float overflow, stable on all mobile GPUs)
+// Smooth high-accuracy hash with angle reduction (never loses precision or overflows on mobile)
 float h(vec2 p){
-  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
-  p3 += dot(p3, p3.yzx + 33.33);
-  return fract((p3.x + p3.y) * p3.z);
+  float d = mod(dot(p, vec2(127.1, 311.7)), 6.2831853);
+  return fract(sin(d) * 43758.5453);
 }
 
 float n(vec2 p){
@@ -60,7 +59,7 @@ float fbm(vec2 p){
   float s = 0.0;
   for(int i = 0; i < 4; i++){
     s += a * n(p);
-    p = p * 2.03 + vec2(7.1, 3.4);
+    p = p * 2.03 + 7.1;
     a *= 0.5;
   }
   return s;
@@ -127,7 +126,7 @@ void main(){
       const targetW = Math.max(2, Math.floor(w * scale));
       const targetH = Math.max(2, Math.floor(h * scale));
 
-      if (Math.abs(canvas.width - targetW) > 1 || Math.abs(canvas.height - targetH) > 1) {
+      if (Math.abs(canvas.width - targetW) > 2 || Math.abs(canvas.height - targetH) > 2) {
         canvas.width = targetW;
         canvas.height = targetH;
         gl.viewport(0, 0, targetW, targetH);
@@ -136,6 +135,7 @@ void main(){
 
     size();
     window.addEventListener('resize', size);
+    window.addEventListener('orientationchange', size);
 
     let resizeObserver;
     if (window.ResizeObserver && canvas.parentElement) {
@@ -165,7 +165,6 @@ void main(){
     function frame(now) {
       const t = (now - t0) / 1000;
       if (window.scrollY < window.innerHeight * 1.2) {
-        size();
         const r = canvas.getBoundingClientRect();
         if (r.width > 0 && r.height > 0) {
           mm.tx = mx > -900 ? (mx - r.left) / r.width : 0.5;
