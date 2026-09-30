@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-const TITLE_TEXT = 'BARK STUDIO';
+const WORDS = ['BARK', 'STUDIO'];
 
 export default function HeroTitle() {
   const lettersRef = useRef([]);
@@ -98,6 +98,7 @@ export default function HeroTitle() {
   };
 
   lettersRef.current = [];
+  let globalCharIndex = 0;
 
   return (
     <h1
@@ -109,28 +110,26 @@ export default function HeroTitle() {
       onPointerEnter={handleMouseEnter}
       style={{ cursor: 'default' }}
     >
-      {TITLE_TEXT.split('').map((char, index) => {
-        if (char === ' ') {
+      {WORDS.map((word, wordIdx) => {
+        const letters = word.split('').map((char) => {
+          const idx = globalCharIndex++;
           return (
             <span
-              key={index}
-              className="sp"
+              key={idx}
+              ref={(el) => {
+                if (el) lettersRef.current.push(el);
+              }}
               aria-hidden="true"
-              style={{ '--i': index }}
-              dangerouslySetInnerHTML={{ __html: '&nbsp;' }}
-            />
+              style={{ '--i': idx }}
+            >
+              {char}
+            </span>
           );
-        }
+        });
+
         return (
-          <span
-            key={index}
-            ref={(el) => {
-              if (el) lettersRef.current.push(el);
-            }}
-            aria-hidden="true"
-            style={{ '--i': index }}
-          >
-            {char}
+          <span key={wordIdx} className="title-word">
+            {letters}
           </span>
         );
       })}

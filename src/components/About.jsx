@@ -4,16 +4,16 @@ export default function About() {
   return (
     <section id="about" className="wrap">
       <div className="about">
-        <AnimatedHeading text="Service as a Product." className="h2" />
+        <AnimatedHeading text="Software as a Product." className="h2" />
         <div>
           <p className="rv" style={{ '--d': 0 }}>
-            Most growth work arrives as a chain of agencies, freelancers and dashboards that never quite connect. Every handoff leaks revenue and every report arrives late.
+            Growth work usually arrives as a chain of agencies, freelancers and dashboards that never quite connect. Handoffs slow everything down, and reports arrive after the moment to act has passed.
           </p>
           <p className="rv" style={{ '--d': 1 }}>
-            BarkStudio builds that work into software. Retention, revenue analytics and lifecycle automation live in one product, tuned by the same team that runs the playbooks behind it.
+            BarkStudio builds that work into software instead. Our first product, AtRisk, shows you which customers are likely to leave and triggers the right response automatically.
           </p>
           <p className="rv" style={{ '--d': 2 }}>
-            Our mission is to replace fragmented agency friction with unified, high-retention products that keep customers longer and make revenue predictable.
+            We're a product studio. AtRisk is the first product, with more to follow.
           </p>
         </div>
       </div>
