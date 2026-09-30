@@ -942,7 +942,7 @@ dialog .btn {
   position: relative;
   z-index: 3;
   max-width: 18ch;
-  line-height: 1.08;
+  line-height: 1.18;
   margin-bottom: clamp(44px, 6vw, 92px);
 }
 
@@ -958,14 +958,18 @@ dialog .btn {
   display: inline-block;
   overflow: hidden;
   vertical-align: top;
-  padding-bottom: .14em;
-  margin-bottom: -.14em;
+  padding-bottom: .22em;
+  margin-bottom: -.22em;
 }
 
 .js .h2 .w > span {
   display: inline-block;
   transform: translateY(112%);
   transition: transform 0.4s ease;
+}
+
+.js .h2.in .w {
+  overflow: visible;
 }
 
 .js .h2.in .w > span {
@@ -1005,13 +1009,13 @@ dialog .btn {
 }
 
 .js .stage {
-  opacity: 0.3;
-  transition: opacity 0.6s ease;
+  opacity: 0.9;
+  transition: opacity 0.4s ease;
 }
 
 .js .stage.in {
   opacity: 1;
-  transition: opacity 1.6s ease;
+  transition: opacity 0.4s ease;
 }
 
 @media (max-width: 860px) {
@@ -1027,6 +1031,9 @@ dialog .btn {
   }
   .js .stage {
     opacity: 1;
+  }
+  .atrisk-stage .more {
+    transition: none !important;
   }
 }
 
@@ -1059,16 +1066,20 @@ section {
   width: 100%;
 }
 
-.atrisk-stage {
+.atrisk-stage,
+.js .atrisk-stage,
+.js .atrisk-stage.in {
   position: relative;
   overflow: hidden !important;
   border-radius: 16px !important;
   border: 1px solid rgba(82, 199, 148, 0.25) !important;
   background: #090A0E !important;
   box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.75), 0 0 60px -20px rgba(82, 199, 148, 0.16);
-  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+  transition: border-color 0.35s ease, box-shadow 0.35s ease;
   isolation: isolate;
   padding-top: 0 !important;
+  opacity: 1 !important;
+  transform: none !important;
 }
 
 .atrisk-stage:hover,
@@ -1077,7 +1088,7 @@ section {
   box-shadow: 0 28px 70px -15px rgba(0, 0, 0, 0.85), 0 0 75px -15px rgba(82, 199, 148, 0.26);
 }
 
-/* Original green live motion with smooth diminishing falloff to edges */
+/* Continuous green fluid canvas without tiling or seam artifacts */
 .atrisk-stage canvas {
   position: absolute !important;
   inset: 0 !important;
@@ -1088,9 +1099,9 @@ section {
   border-radius: 16px !important;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.85 !important;
-  -webkit-mask-image: radial-gradient(ellipse 92% 86% at 50% 50%, rgba(0, 0, 0, 1) 15%, rgba(0, 0, 0, 0.7) 50%, rgba(0, 0, 0, 0.2) 80%, transparent 100%);
-  mask-image: radial-gradient(ellipse 92% 86% at 50% 50%, rgba(0, 0, 0, 1) 15%, rgba(0, 0, 0, 0.7) 50%, rgba(0, 0, 0, 0.2) 80%, transparent 100%);
+  opacity: 0.9 !important;
+  display: block !important;
+  transform: none !important;
 }
 
 /* Remove any darkening overlay pseudo-elements */
@@ -1100,12 +1111,14 @@ section {
   content: none !important;
 }
 
+/* Subtle, fixed bottom-weighted scrim ensuring WCAG AA contrast (never dims on interaction) */
 .atrisk-stage .rows {
   position: relative;
   z-index: 2;
   margin-top: 0;
   border-top: none;
-  background: transparent !important;
+  background: linear-gradient(180deg, rgba(9, 10, 14, 0.15) 0%, rgba(9, 10, 14, 0.32) 100%) !important;
+  border-radius: 16px;
 }
 
 .atrisk-stage .item,
@@ -1138,18 +1151,18 @@ section {
   font-weight: 600 !important;
   font-size: clamp(38px, 6vw, 76px) !important;
   letter-spacing: -0.02em !important;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6) !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8) !important;
 }
 
 .atrisk-stage p,
 .atrisk-stage .row p,
 .atrisk-stage .item .row p {
-  color: #E2E8F0 !important;
+  color: #F1F5F9 !important;
   font-size: clamp(17px, 1.8vw, 22px) !important;
   line-height: 1.45 !important;
   font-weight: 400 !important;
   opacity: 1 !important;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5) !important;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7) !important;
 }
 
 .atrisk-stage small,
@@ -1176,7 +1189,7 @@ section {
   box-shadow: 0 0 20px rgba(82, 199, 148, 0.45) !important;
 }
 
-/* More / Details Section — Completely transparent with NO dark overlays on expand */
+/* More / Details Section — Smooth 360ms ease-out expand/collapse with no lingering dark state */
 .atrisk-stage .more {
   position: relative;
   z-index: 2;
@@ -1184,7 +1197,8 @@ section {
   background-color: transparent !important;
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+  transition: grid-template-rows 0.36s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  will-change: grid-template-rows;
 }
 
 .atrisk-stage.open-stage .more,
@@ -1206,17 +1220,17 @@ section {
 }
 
 .atrisk-stage .more li {
-  color: #F1F4F9 !important;
+  color: #FFFFFF !important;
   font-size: 15px !important;
   font-weight: 400 !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.16) !important;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7) !important;
   padding: 12px 0 !important;
   opacity: 1 !important;
 }
 
 .atrisk-stage .btn.ghost {
-  background: rgba(255, 255, 255, 0.06) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
   border: 1px solid rgba(82, 199, 148, 0.5) !important;
   color: #FFFFFF !important;
   font-weight: 500 !important;

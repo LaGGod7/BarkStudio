@@ -91,12 +91,16 @@ export default function Stage({ tint = 'pink', className = '', style, children }
     });
 
     function size() {
-      const nextW = Math.max(2, Math.floor(cv.clientWidth * 0.5));
-      const nextH = Math.max(2, Math.floor(cv.clientHeight * 0.5));
-      if (Math.abs(cv.width - nextW) > 4 || Math.abs(cv.height - nextH) > 4) {
+      if (!st || !cv) return;
+      const rect = st.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const nextW = Math.max(2, Math.round(rect.width * dpr));
+      const nextH = Math.max(2, Math.round(rect.height * dpr));
+      if (Math.abs(cv.width - nextW) > 1 || Math.abs(cv.height - nextH) > 1) {
         cv.width = nextW;
         cv.height = nextH;
-        gl.viewport(0, 0, cv.width, cv.height);
+        gl.viewport(0, 0, nextW, nextH);
       }
     }
 
@@ -108,16 +112,13 @@ export default function Stage({ tint = 'pink', className = '', style, children }
     st.addEventListener('transitionend', handleTransitionEnd);
 
     let resizeObserver;
-    let resizeTimer = null;
     if (window.ResizeObserver) {
       resizeObserver = new ResizeObserver(() => {
-        if (resizeTimer) clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(size, 40);
+        size();
       });
       resizeObserver.observe(st);
     }
 
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let mx = 0.5;
     let my = 0.5;
     let tx = 0.5;
@@ -134,6 +135,7 @@ export default function Stage({ tint = 'pink', className = '', style, children }
       vis = entries[0].isIntersecting;
       if (vis) {
         lastNow = performance.now();
+        size();
       }
     });
     intersectionObserver.observe(st);
@@ -172,6 +174,19 @@ export default function Stage({ tint = 'pink', className = '', style, children }
       lastNow = now;
 
       if (vis) {
+        // Continuous atomic size tracking to prevent buffer mismatch during transitions
+        const rect = st.getBoundingClientRect();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const w = Math.max(2, Math.round(rect.width * dpr));
+        const h = Math.max(2, Math.round(rect.height * dpr));
+        if (Math.abs(cv.width - w) > 1 || Math.abs(cv.height - h) > 1) {
+          cv.width = w;
+          cv.height = h;
+          gl.viewport(0, 0, w, h);
+        }
+
+        const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
         mx += (tx - mx) * 0.1;
         my += (ty - my) * 0.1;
         k += (tk - k) * 0.12;
@@ -183,8 +198,8 @@ export default function Stage({ tint = 'pink', className = '', style, children }
         gl.uniform2f(U.r, cv.width, cv.height);
         gl.uniform2f(U.m, mx, my);
         gl.uniform3f(U.tn, tn[0], tn[1], tn[2]);
-        gl.uniform1f(U.t, reduce ? 3 : accumulatedTime);
-        gl.uniform1f(U.k, k);
+        gl.uniform1f(U.t, isReduced ? 3.0 : accumulatedTime);
+        gl.uniform1f(U.k, isReduced ? 0.2 : k);
         gl.uniform1f(U.h0, hue);
         gl.drawArrays(gl.TRIANGLES, 0, 3);
       }
@@ -196,7 +211,6 @@ export default function Stage({ tint = 'pink', className = '', style, children }
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', size);
-      if (resizeTimer) clearTimeout(resizeTimer);
       if (resizeObserver) resizeObserver.disconnect();
       intersectionObserver.disconnect();
       st.removeEventListener('transitionend', handleTransitionEnd);
