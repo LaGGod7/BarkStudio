@@ -142,18 +142,23 @@ export default function Stage({ tint = 'pink', className = '', style, children }
       }
     }
 
+    let needsResize = false;
+    const requestSizeSync = () => {
+      needsResize = true;
+    };
+
     size();
-    window.addEventListener('resize', size);
-    window.addEventListener('orientationchange', size);
+    window.addEventListener('resize', requestSizeSync);
+    window.addEventListener('orientationchange', requestSizeSync);
 
     // Fast sync when CSS transitions end
-    const handleTransitionEnd = () => size();
+    const handleTransitionEnd = () => requestSizeSync();
     st.addEventListener('transitionend', handleTransitionEnd);
 
     let resizeObserver;
     if (window.ResizeObserver) {
       resizeObserver = new ResizeObserver(() => {
-        size();
+        requestSizeSync();
       });
       resizeObserver.observe(st);
     }
@@ -174,7 +179,7 @@ export default function Stage({ tint = 'pink', className = '', style, children }
       vis = entries[0].isIntersecting;
       if (vis) {
         lastNow = performance.now();
-        size();
+        requestSizeSync();
       }
     });
     intersectionObserver.observe(st);
@@ -221,6 +226,11 @@ export default function Stage({ tint = 'pink', className = '', style, children }
       lastNow = now;
 
       if (vis) {
+        if (needsResize) {
+          size();
+          needsResize = false;
+        }
+
         const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         mx += (tx - mx) * 0.1;
@@ -246,8 +256,8 @@ export default function Stage({ tint = 'pink', className = '', style, children }
 
     return () => {
       cancelAnimationFrame(animId);
-      window.removeEventListener('resize', size);
-      window.removeEventListener('orientationchange', size);
+      window.removeEventListener('resize', requestSizeSync);
+      window.removeEventListener('orientationchange', requestSizeSync);
       if (resizeObserver) resizeObserver.disconnect();
       intersectionObserver.disconnect();
       cv.removeEventListener('webglcontextlost', handleContextLost);

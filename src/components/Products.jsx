@@ -21,6 +21,13 @@ export default function Products({ onEarlyAccessClick }) {
     }
   };
 
+  const handleRowKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleOpen();
+    }
+  };
+
   return (
     <section id="products" className="wrap" style={{ paddingTop: 'clamp(40px, 6vw, 96px)', paddingBottom: 'clamp(80px, 12vw, 160px)' }}>
       <AnimatedHeading text="Our first product." className="h2" />
@@ -28,10 +35,12 @@ export default function Products({ onEarlyAccessClick }) {
         <Stage tint="green" className={`atrisk-stage ${isOpen ? 'open-stage' : ''}`}>
           <div className="rows">
             <div className={`item ${isOpen ? 'open' : ''}`}>
-              <button
-                type="button"
+              <div
                 className="row"
                 onClick={toggleOpen}
+                onKeyDown={handleRowKeyDown}
+                role="button"
+                tabIndex={0}
                 aria-expanded={isOpen}
                 aria-controls="atrisk-details"
               >
@@ -39,17 +48,16 @@ export default function Products({ onEarlyAccessClick }) {
                 <p className="rv" style={{ '--d': 1 }}>
                   Churn risk score per customer.
                 </p>
-                <small
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleActionClick(e);
-                  }}
-                  style={{ cursor: 'pointer' }}
+                <button
+                  type="button"
+                  className="atrisk-badge"
+                  onClick={handleActionClick}
                   title="Click to request early access"
+                  aria-label="Request early access to AtRisk"
                 >
                   Early access
-                </small>
-              </button>
+                </button>
+              </div>
 
               <div className="more" id="atrisk-details">
                 <div>
@@ -61,7 +69,7 @@ export default function Products({ onEarlyAccessClick }) {
                     <li>Weekly cohort health reports sent directly to your leadership</li>
                     <li>Customizable retention rules tailored to your pricing tiers</li>
                   </ul>
-                  <div style={{ padding: '0 clamp(18px,3vw,40px) 30px' }}>
+                  <div className="atrisk-cta-wrap">
                     <button
                       type="button"
                       className="btn ghost"
